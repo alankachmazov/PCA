@@ -1,0 +1,275 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+
+\title{Principal Components Analysis}
+\author{Alan Kachmazov}
+\date{June 2023}
+
+\begin{document}
+
+
+\maketitle
+\newpage
+\section*{Introduction}
+
+Principal components analysis (PCA) estimates linear combinations of the variables with maximal variance. Consider, for instance, returns of m companies. An index is a linear combination of the returns (more or less). The weights of the index are chosen, such that the index explains most of the variation of the market.
+PCA is based on the singular value decomposition of the covariance matrix (recall linear algebra).
+We have
+$\Sigma = UDU^T$
+with U orthogonal and $D$ diagonal. The diagonal elements of D are the eigenvalues of $\Sigma$, the columns $u_1, ..., u_m$ of $U$ the corresponding eigenvectors. Let the eigenvalues be ordered, $\lambda_1 \geq \lambda_2 \geq \ldots \geq \lambda_m$. $u_1$ is are the weights of the first principal component, $u_2$ of the second etc.
+
+$\dfrac{\lambda_i}{\Sigma \lambda_j}$
+is the proportion of the variance explained by the $i$'th principal component.
+\begin{enumerate}
+  \item The file \texttt{PCADat.cv} contains weekly returns of 8 companies, 3 from the financial and 5 from the industrial sector.
+  \item Plot the variables.
+  \item Estimate the parameter, i.e. the $8 \times 8$ covariance matrix.
+  \item Compute the eigenvalues and the eigenvectors.
+  \item Choose the principal components that explain approximately 90\% of the variance.
+  \item Try to provide an interpretation of the weights.
+\end{enumerate}
+
+\section*{Principal Component Analysis}
+
+Principal Component Analysis (PCA) is a dimensionality reduction technique used to transform a high-dimensional dataset into a lower-dimensional space based on SVD. PCA aims to find the most important features or patterns in a dataset by transforming the data into a new coordinate system. It achieves this by transforming the original variables into a new set of variables, called principal components, which are linear combinations of the original variables. Number of principal components is the same as number of variables in initial dataset. 
+First linear component is chosen in such way that it accounts for highest possible variance of data. The subsequent principal components are selected to maximize the remaining variance while being orthogonal (uncorrelated) to the previously selected components. 
+PCA is widely used nowadays for different purposes. For instance it is used for image compression. By representing images in terms of their principal components, it is possible to reduce the size of the image while preserving the essential features. This helps in reducing storage requirements and transmission time while maintaining visual quality. It is also used for face recognition by representing face images as a set of principal components, it is possible to reduce the dimensionality of the face space and extract the most discriminative features. PCA can be used for financial portfolio analysis by identifying the principal components, one can determine the factors driving the returns and risk in the portfolio. This information can help in portfolio optimization, risk management, and diversification strategies.
+
+These are the steps required in order to perform PCA:
+\begin{enumerate}
+  \item Compute the covariance matrix: The covariance matrix is calculated based on the standardized data. It measures the relationships between pairs of features and provides insights into their linear dependencies.
+  \item Compute the eigenvectors and eigenvalues: The eigenvectors and eigenvalues are derived from the covariance matrix. The eigenvectors represent the directions or axes of maximum variance, while the eigenvalues indicate the amount of variance explained by each eigenvector.
+  \item Select the principal components: The eigenvectors are ranked based on their corresponding eigenvalues.
+  \item Transform the data: The original data is projected onto the new coordinate system formed by the selected principal components.
+\end{enumerate}
+
+\section{Dataset}
+We are provided with a dataset that contains weekly returns of 8 companies (3 from the financial and 5 from the industrial sector). \\
+First of all lets try to visualize the returns. We will be using line chart for this purpose.
+<<plotting1, echo=TRUE, eval=TRUE>>=
+# Load the "ggplot2" package
+library(ggplot2)
+# Load the "gridExtra" package to use grid.arrange function to put all 
+#charts together
+library(gridExtra)
+# set the correct path to data
+data <- read.csv("PCADat.csv", sep = ";")
+# assign returns to "return" variables. 
+#i stays for industrial and f for financial.
+returns_f1 <- data[, 1]
+returns_f2 <- data[, 2]
+returns_f3 <- data[, 3]
+returns_i1 <- data[, 4]
+returns_i2 <- data[, 5]
+returns_i3 <- data[, 6]
+returns_i4 <- data[, 7]
+returns_i5 <- data[, 8]
+
+# create variable with 52 weeks for plotting
+weeks <- c(1:length(returns_f1))
+
+# combine returns with weeks into a dataframe for plotting
+f1 <- data.frame(weeks, returns_f1)
+f2 <- data.frame(weeks, returns_f2)
+f3 <- data.frame(weeks, returns_f3)
+i1 <- data.frame(weeks, returns_i1)
+i2 <- data.frame(weeks, returns_i2)
+i3 <- data.frame(weeks, returns_i3)
+i4 <- data.frame(weeks, returns_i4)
+i5 <- data.frame(weeks, returns_i5)
+
+i1_plot <- ggplot(i1, aes(x = weeks, y = returns_i1)) + geom_line() +
+  ggtitle("Weekly Returns of I1") + xlab("Weeks") + ylab("Return") +
+  geom_area(fill = "purple", alpha = 0.5)
+
+
+i2_plot <- ggplot(i2, aes(x = weeks, y = returns_i2)) + geom_line() +
+  ggtitle("Weekly Returns of I2") + xlab("Weeks") + ylab("Return") +
+  geom_area(fill = "#3480eb", alpha = 0.5)
+
+
+i3_plot <- ggplot(i3, aes(x = weeks, y = returns_i3)) + geom_line() +
+  ggtitle("Weekly Returns of I3") + xlab("Weeks") + ylab("Return") +
+  geom_area(fill = "#5be8eb", alpha = 0.5)
+
+
+i4_plot <- ggplot(i4, aes(x = weeks, y = returns_i4)) + geom_line() +
+  ggtitle("Weekly Returns of I4") + xlab("Weeks") + ylab("Return") +
+  geom_area(fill = "#eb5bb6", alpha = 0.5)
+
+
+i5_plot <- ggplot(i5, aes(x = weeks, y = returns_i5)) + geom_line() +
+  ggtitle("Weekly Returns of I5") + xlab("Weeks") + ylab("Return")  +
+  geom_area(fill = "#f54251", alpha = 0.5)
+
+
+f1_plot <- ggplot(f1, aes(x = weeks, y = returns_f1)) + geom_line() +
+  ggtitle("Weekly Returns of F1") + xlab("Weeks") + ylab("Return") +
+  geom_area(fill = "#51e851", alpha = 0.5)
+
+
+f2_plot <- ggplot(f2, aes(x = weeks, y = returns_f2)) + geom_line() +
+  ggtitle("Weekly Returns of F2") + xlab("Weeks") + ylab("Return") +
+  geom_area(fill = "#e8e351", alpha = 0.5)
+
+
+f3_plot <- ggplot(f3, aes(x = weeks, y = returns_f3)) + geom_line() +
+  ggtitle("Weekly Returns of F3") + xlab("Weeks") + ylab("Return") +
+  geom_area(fill = "#1e9096", alpha = 0.5)
+
+# this function will combine all the plots into one
+grid.arrange(i1_plot, i2_plot, i3_plot, i4_plot, 
+             i5_plot, f1_plot, f2_plot, f3_plot, ncol = 3)
+
+@
+From these charts we cannot observe any discernible correlations between companies returns or make any meaningful conclusions.
+This is why we will look at possible correlation between individual companies. \\
+First of all lets have a look at a correlation between two industrial companies (I1 and I2).\\
+We can clearly see a positive correlation pattern.
+<<plotting2, echo=TRUE, eval=TRUE>>=
+ggplot(data, aes(x = I1, y = I2)) + geom_point(col = "#de21b0", size = 2)
+@
+Now lets have a look at a correlation between two financial companies (F1 and F2).\\
+Once again we can clearly observe a positive correlation pattern.
+
+<<plotting3, echo=TRUE, eval=TRUE>>=
+ggplot(data, aes(x = F1, y = F2)) + geom_point(col ="#09d0eb", size =2)
+@
+Finally when we try to plot returns of two companies from different sectors (I1 and F1) we cannot see any discernible correlation.
+
+<<plotting4, echo=TRUE, eval=TRUE>>=
+ggplot(data, aes(x = I1, y = F1)) + geom_point(col = "#0ec949", size = 2)
+@
+
+\section{Covariance and Corrlation Matrices}
+As it was already mentioned before we need to compute a covariance matrix in order to perform PCA. In certain cases it is necessary to scale data before 
+calculating covariance matrix for instance when we have different measurement units (kg, USD, cm). However this practice should be avoid if possible 
+because it leads to information loss. Since our data has the same measurement units there is no need in scaling. \\
+It is important to understand the difference and relationship between correlation and covariance matrices. While the correlation tells us information about the direction and magnitude of how two features vary with each other, the covariance gives us just the direction in which two quantities vary with each other.\\
+Lets have a look at covariance matrix for our data. \\
+<<covariance, echo=TRUE, eval=TRUE>>=
+#Create a matrix from our data
+matrix1 <- as.matrix(data)
+#Compute 8x8 covariance matrix 
+covmat <- cov(matrix1)
+covmat
+@
+We can use a heatmap to visualize the covariance matrix that we obtained.
+<<covariance_viz, echo=TRUE, eval=TRUE>>=
+library(corrplot)
+# since the covariance is very low we need to multiply it for plotting
+covmat_viz <- covmat * 960
+corrplot(covmat_viz)
+@
+We know that COV(X, X) = VAR(X). Now if we look at the diagonal we can see if the variables show higher or lower level of variance. \\
+Lets have a look at correlation matrix. 
+<<correlation_viz, echo=TRUE, eval=TRUE>>=
+# function to compute correlation matrix
+cormat <- cor(matrix1)
+corrplot(cormat)
+@
+Unsurprisingly it has the same pattern as the covariance matrix however since the correlation between variables with themselves is equal to 1 we cannot observe their variance anymore on the diagonal. \\
+However there is one more important observation that we can make with help of these visualizations. We can see that one of the industrial companies (I4) indicates a strong correlation with financial companies. \\
+Finally lets have a look what happens if we calculate covariance matrix from scaled data. 
+<<covariance_scaled, echo=TRUE, eval=TRUE>>=
+# function to scale data
+data_scaled <- scale(data)
+matrix_scaled <- as.matrix(data_scaled)
+covmat_scaled <- cov(matrix_scaled)
+corrplot(covmat_scaled)
+@
+We can see that now covariance matrix looks exactly the same as the correlation matrix. 
+
+\section{SVD, eigenvectors and eigenvalues}
+
+The next step is to calculate eigenvectors and correspomdimg eigenvalues. In order to do so we should use matrix factorization methods, in our case SVD (Singular Value Decomposition). The formula for SVD is $\Sigma = UDV^T$, however since we have a square matrix we can rewrite it this way $\Sigma = UDU^T$. Basically we obtain 3 new matrices, D is a diagonal matrix which values represent eigenvalues and U is the corresponding eigenvectors. By multiplying these 3 matrices we can reconstruct initial matrix. \\
+Since we work with R we can use in-built "eigen()" function which calculates the eigenvectors and corresponding eigenvalues from the covariance matrix that we obtained before. 
+<<eigen, echo=TRUE, eval=TRUE>>=
+# compute eigenvalues and eigenvectors
+eigen_result <- eigen(covmat)
+#extract eigenvalues from the result
+eigen_values <- eigen_result$values
+#extract eigenvectors from the result
+eigen_vectors <- eigen_result$vectors
+eigen_result
+@
+
+From eigenvalues we can derive the proportion of variance explained by principal components. 
+
+<<var_explained, echo=TRUE, eval=TRUE>>=
+# calculate total sum of eigenvalues
+total_variance = sum(eigen_values)
+# calculate proportion of variance explained by every principal component
+var_explained <- eigen_values / total_variance
+var_explained
+@
+We can see that the first principle explains approximately 67.91\% and the second one 24.22\%.\\
+Lets visualize the distribution of variance explained by every principal component. 
+<<pc_plot, echo=TRUE, eval=TRUE>>=
+eigen_values_df <- data.frame(var_explained, 
+            c("PC1", "PC2","PC3","PC4","PC5","PC6","PC7","PC8"))
+colnames(eigen_values_df) <- c("variance_explained", "value_number")
+
+variance_explained_plot <- ggplot(eigen_values_df, aes(x=value_number, 
+  y=variance_explained, fill=value_number)) +
+  geom_bar(stat="identity") + theme_minimal() + 
+  labs(x = "Principal Components", y = "Proportion of Variance explained", fill = "") +
+  ggtitle("Projetcion of data") + theme(plot.title = element_text(hjust = 0.5))
+variance_explained_plot
+@
+From the visualization we clearly see that the there is no need to use more than 2 principal components for PCA. First two principal components explain approximately 92.13\% of variance. \\
+
+
+\section{Projection of Data}
+Now after we obtained principal components we can construct new coordinate system from the principal components and project our data on them. \\
+For a better visualisation lets start from just plotting all the initial variables that we had from our dataset. Every point is a return of a certain company at a certain point of time (week). 
+<<data_viz, echo=TRUE, eval=TRUE>>=
+plot <- ggplot() +
+  geom_point(data = i1, aes(x = weeks, y = returns_i1)) +
+  geom_point(data = i2, aes(x = weeks, y = returns_i2)) +
+  geom_point(data = i3, aes(x = weeks, y = returns_i3)) +
+  geom_point(data = i4, aes(x = weeks, y = returns_i4)) +
+  geom_point(data = i5, aes(x = weeks, y = returns_i5)) +
+  geom_point(data = f1, aes(x = weeks, y = returns_f1)) +
+  geom_point(data = f2, aes(x = weeks, y = returns_f2)) +
+  geom_point(data = f3, aes(x = weeks, y = returns_f3)) +
+  labs(x = "weeks", y = "returns")
+
+plot
+@
+From this plot we cannot make any conclusions. It is difficult to see any individual company dynamics or observe possible correlation between variables. \\
+Now lets project our initial on the principal components that we obtained and see if we can draw any conclusions. 
+<<pc_viz, echo=TRUE, eval=TRUE>>=
+# select first two principle components
+selected_eigenvectors <- eigen_vectors[, 1:2]
+# project data on principle components
+component_matrix <- matrix1 %*% selected_eigenvectors
+# rename columns
+colnames(component_matrix) <- c("first_component", "second_component")
+# create datafrmae from the matrix
+components_df <- data.frame(component_matrix)
+# visualize data projection on principle components
+ggplot(data = components_df, aes(x = second_component, y = first_component)) + geom_point(size = 2) +
+  labs(x = "Principal Component 2", y = "Principal Component 1") +
+  ggtitle("Projetcion of data") + theme(plot.title = element_text(hjust = 0.5))
+@
+Now we can clearly see two clusters. Even though principle components are latent vectors that describe properties that cannot be directly observed or interpreted we can try to speculate and conclude that these two clusters represent two different markets - industrial and financial based on the correlations between companies within corresponding markets. However as we have already seen from the correlation matrix there is a correlation between industrial company (I4) and financial companies. We can have a look at our principal components once again to prove that this fact found its representation in data projection. \\
+<<two_pc, echo=TRUE, eval=TRUE>>=
+selected_eigenvectors
+@
+As we can see all the values for first principle component are negative. We can assume that first principle component represents the whole market for both types of companies. As we already figured out the second principle components separates it into two different markets. There are however 4 negative and 4 positive values in the second principle component (we are not interested in absolute values, only the sign matters), which shows that there is a correlation between 4 industrial companies and 3 financial with 1 industrial company. \\
+We can check it and visualize once again using simple scatter plot. 
+<<comp_corr, echo=TRUE, eval=TRUE>>=
+ggplot(data, aes(x = I4, y = F1)) + geom_point(col = "#06615e", size = 2)
+@
+We can clearly see correlation between I4 and F1. \\
+Now lets have a look at correlation between I4 and another industrial company (I1).
+<<comp_corr2, echo=TRUE, eval=TRUE>>=
+ggplot(data, aes(x = I4, y = I1)) + geom_point(col = "#4e3c7a", size = 2)
+@
+We cannot directly observe any discernible correlation between these two companies, which was already shown by principle components and their weights.
+
+\end{document}
+
