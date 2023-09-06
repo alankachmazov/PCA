@@ -1,7 +1,9 @@
 # Principal Component Analysis
 This is an individual project written in R. Principal Component Analysis is performed to obtain some insights from  the data, investigate possible correlations between variables and vizualise the findings.  
 
-This project is provided as an R Markdown (Rnw) file. It's important to note that you shouldn't simply use it in plain R. Follow these steps to make the most out of this project:
+In the repository you can find the data file needed for running the code: PCADat.csv
+
+This project is provided as an R Markdown (Rnw) file using LaTeX. It's important to note that you shouldn't simply use it in plain R. Follow these steps to make the most out of this project:
 
 1. **Install R and RStudio:** If you haven't already, make sure you have R and RStudio installed on your system. You can download them from the official websites:
    - [R](https://cran.r-project.org/)
